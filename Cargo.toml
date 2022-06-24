@@ -11,7 +11,7 @@ test = false
 bench = false
 
 [dependencies]
-dht-sensor = "0.2.1"
+dht11 = "0.3.1"
 panic-halt = "0.2.0"
 ufmt = "0.1.0"
 nb = "1.0.0"

@@ -86,10 +86,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "dht-sensor"
-version = "0.2.1"
+name = "dht11"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74d643854f324f02daea7153ebbfec5cfcc2f395faf1c7011be65e543570de28"
+checksum = "fa82acd8985622297d3feb1e2bf1ce177aaa1d6518df69524110410d08c7fb06"
 dependencies = [
  "embedded-hal",
 ]
@@ -160,7 +160,7 @@ name = "rust-arduino"
 version = "0.1.0"
 dependencies = [
  "arduino-hal",
- "dht-sensor",
+ "dht11",
  "embedded-hal",
  "nb 1.0.0",
  "panic-halt",

@@ -1,15 +1,19 @@
 #![no_std]
 #![no_main]
 
+mod dht;
+mod serial;
+mod display_i2c;
+
 use core::time::Duration;
 
 use arduino_hal::{prelude::*, port::{mode::{Output, Input}, Pin}, hal::{port::{PB5, PD0, PD1}, Atmega}, pac::USART0, clock::MHz16, Peripherals, I2c, Delay};
 use arduino_hal::Usart;
+use dht::Dht;
+use dht11::Dht11;
 use panic_halt as _;
-use embedded_hal::{serial::Read, digital::v2::{OutputPin, PinState}};
+use embedded_hal::{serial::Read, digital::v2::{OutputPin, PinState}, prelude::_embedded_hal_serial_Write};
 use display_i2c::Lcd;
-
-mod display_i2c;
 
 #[repr(u8)]
 enum Action {
@@ -37,7 +41,6 @@ impl TryFrom<u8> for Action {
     }
 }
 
-type Serial = Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>;
 type Led = Pin<Output, PB5>;
 type Display = Lcd<I2c, Delay>;
 
@@ -67,7 +70,12 @@ fn main() -> ! {
         .rows(2)
         .init().unwrap();
 
-    
+    // DHT11 sensor
+    let mut dht = Dht::new(
+        Dht11::new(pins.d2.into_opendrain()), 
+        arduino_hal::Delay::new()
+    );
+
     // Say wait for connection with master
     loop {
         serial.write_byte(Action::Hello as u8);
@@ -82,23 +90,23 @@ fn main() -> ! {
             Err(_) => {}
         }
     }
+
     // Main loop
     loop {
-        handle_action(&mut serial, &mut led, &mut display);
+        handle_action(&mut serial, &mut led, &mut display, &mut dht);
     }
-
-
     //ufmt::uwrite!(&mut serial, "Hello, world!\r\n").void_unwrap();
 }
 
-fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display) {
-    match Action::try_from(serial.read_byte()) {
+fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht: &mut Dht) {
+    let action = Action::try_from(serial.read_byte());
+
+    match action {
         Ok(Action::Hello) => {},
         Ok(Action::SwitchLed) => {
             let state: u8 = serial.read_byte();
             if state != 0 {led.set_state(PinState::High).unwrap();}
             else {led.set_state(PinState::Low).unwrap();}
-            serial.write_byte(Action::Recv as u8);
         },
         Ok(Action::DisplayMessage) => {
             let amt_bytes = serial.read_byte().clamp(0, 32); 
@@ -113,13 +121,17 @@ fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display) {
             write_message(core::str::from_utf8(&message).unwrap(), display);
         },
         Ok(Action::ReadTemperature) => {
-           
+            dht.temperature()
         },
         Ok(Action::ReadHumidity) => {
             
         },
         Ok(Action::Recv) => {},
         Err(_) => {}
+    }
+
+    if action.is_ok() {
+        serial.write_byte(Action::Recv as u8);
     }
 }
 
