@@ -1,4 +1,6 @@
 use arduino_hal::{Usart, pac::USART0, port::{Pin, mode::{Input, Output}}, hal::port::{PD0, PD1}};
+
+use crate::Action;
 type SerialType = Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>;
 
 pub struct Serial {
@@ -6,11 +8,11 @@ pub struct Serial {
 }
 
 impl Serial {
-    pub fn new(&mut self, serial: SerialType) -> Self {
+    pub fn new(serial: SerialType) -> Self {
         Self { serial }
     }
 
-    pub fn read_u8(&mut self) -> u8 {
+    pub fn read(&mut self) -> u8 {
         self.serial.read_byte()
     }
 
@@ -22,5 +24,9 @@ impl Serial {
         for b in buf {
             self.serial.write_byte(*b);
         }
+    }
+
+    pub fn write_action(&mut self, action: Action) {
+        self.write_u8(action as u8);
     }
 }
