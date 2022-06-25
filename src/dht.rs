@@ -12,18 +12,14 @@ impl Dht {
         Self { dht , delay }
     }
 
-    pub fn temperature(&mut self) -> [u8; 2] {
+    pub fn measure(&mut self) -> [u8; 4] {
         loop {
             if let Ok(measurement) = self.dht.perform_measurement(&mut self.delay) {
-                return measurement.temperature.to_le_bytes()
-            }
-        }
-    }
-
-    pub fn humidity(&mut self) -> [u8; 2] {
-        loop {
-            if let Ok(measurement) = self.dht.perform_measurement(&mut self.delay) {
-                return measurement.humidity.to_le_bytes()
+                let mut total: [u8; 4] = [0;4];
+                let (t, h) = total.split_at_mut(2);
+                t.copy_from_slice(&measurement.temperature.to_le_bytes());
+                h.copy_from_slice(&measurement.humidity.to_le_bytes());
+                return total;
             }
         }
     }

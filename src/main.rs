@@ -19,9 +19,8 @@ enum Action {
     Hello = 0,
     SwitchLed = 1,
     DisplayMessage = 2,
-    ReadTemperature = 3,
-    ReadHumidity = 4,
-    Recv = 5,
+    ReadDHT = 3,
+    Recv = 4,
 }
 
 impl TryFrom<u8> for Action {
@@ -32,9 +31,8 @@ impl TryFrom<u8> for Action {
             0 => Ok(Action::Hello),
             1 => Ok(Action::SwitchLed),
             2 => Ok(Action::DisplayMessage),
-            3 => Ok(Action::ReadTemperature),
-            4 => Ok(Action::ReadHumidity),
-            5 => Ok(Action::Recv),
+            3 => Ok(Action::ReadDHT),
+            4 => Ok(Action::Recv),
             _ => Err(()),
         }
     }
@@ -115,12 +113,9 @@ fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht:
             }
             write_message(core::str::from_utf8(message).unwrap(), display);
         },
-        Ok(Action::ReadTemperature) => {
-            serial.write(&dht.temperature());
-        },
-        Ok(Action::ReadHumidity) => {
-            serial.write(&dht.humidity())
-        },
+        Ok(Action::ReadDHT) => {
+            serial.write(&dht.measure());
+        }
         Ok(Action::Recv) => {},
         Err(_) => {}
     }
