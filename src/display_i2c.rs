@@ -232,7 +232,7 @@ where
     /// Set the cursor to (rows, col). Coordinates are zero-based.
     pub fn set_cursor(&mut self, row: u8, col: u8) -> Result<(), <I as Write>::Error> {
         self.return_home()?;
-        let shift: u8 = row * 16 + col;
+        let shift: u8 = row * 40 + col;
         for _i in 0..shift {
             self.command(Commands::ShiftCursor as u8)?;
         }
