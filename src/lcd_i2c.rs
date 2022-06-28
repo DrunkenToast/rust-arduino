@@ -57,7 +57,7 @@ pub enum DisplayControl {
     DisplayOn = 0x04,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Backlight {
     Off = 0x00,
     On = 0x08,
@@ -169,7 +169,7 @@ where
         // Entry right: shifting cursor moves to right
         self.command(0x14)?;
         self.command(Commands::ReturnHome as u8)?;
-        self.backlight(self.backlight_state)?;
+        self.set_backlight(self.backlight_state)?;
         Ok(self)
     }
 
@@ -199,12 +199,16 @@ where
         self.send(data, Mode::Cmd)
     }
 
-    pub fn backlight(&mut self, backlight: Backlight) -> Result<(), <I as Write>::Error> {
+    pub fn set_backlight(&mut self, backlight: Backlight) -> Result<(), <I as Write>::Error> {
         self.backlight_state = backlight;
         self.i2c.write(
             self.address,
             &[DisplayControl::DisplayOn as u8 | backlight as u8],
         )
+    }
+
+    pub fn get_backlight(&self) -> Backlight {
+        self.backlight_state
     }
 
     /// Write string to display.

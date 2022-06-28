@@ -17,11 +17,16 @@ ufmt = "0.1.0"
 nb = "1.0.0"
 embedded-hal = "0.2.3"
 ufmt-write = "0.1.0"
+embedded-time = "0.12.1"
 
 [dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"
 rev = "d0d2f243bd3e10b49f6a78d44839a6caa8be7d43"
 features = ["arduino-uno"]
+
+[dependencies.avr-device]
+version = "0.3.4"
+features = ["atmega328p"]
 
 # Configure the build for minimal size - AVRs have very little program memory
 [profile.dev]

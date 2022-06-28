@@ -1,17 +1,25 @@
 #![no_std]
 #![no_main]
+#![feature(abi_avr_interrupt)]
 
 mod dht;
 mod serial;
-mod display_i2c;
+mod lcd_i2c;
+mod display;
+mod millis;
+mod panic;
 
+use arduino_hal::{port::{mode::{Output}, Pin}, hal::{port::{PB5}, Atmega}, I2c, Delay, clock::Clock};
+use arduino_hal::prelude::*;
 
-use arduino_hal::{port::{mode::{Output}, Pin}, hal::{port::{PB5}}, I2c, Delay};
 use dht::Dht;
 use dht11::Dht11;
+use display::Display;
+use embedded_time::{Timer, duration::Extensions};
+use millis::{millis_init, millis};
 use panic_halt as _;
-use embedded_hal::{digital::v2::{OutputPin, PinState}};
-use display_i2c::Lcd;
+use embedded_hal::{prelude::*, digital::v2::{OutputPin, PinState}, timer};
+use lcd_i2c::{Lcd, Backlight};
 use serial::Serial;
 
 #[repr(u8)]
@@ -39,7 +47,6 @@ impl TryFrom<u8> for Action {
 }
 
 type Led = Pin<Output, PB5>;
-type Display = Lcd<I2c, Delay>;
 
 const LCD_ADDR: u8 = 0x27;
 
@@ -48,9 +55,14 @@ fn main() -> ! {
     // Init Arduino peripherals
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
-
+    
     let mut led: Led = pins.d13.into_output();
     let mut serial: Serial = Serial::new(arduino_hal::default_serial!(dp, pins, 9600));
+
+    millis_init(dp.TC0);
+    // Enable interrupts globally
+    unsafe { avr_device::interrupt::enable() };
+
 
     let i2c = arduino_hal::I2c::new(
         dp.TWI,
@@ -61,11 +73,13 @@ fn main() -> ! {
 
     let delay_lcd = arduino_hal::Delay::new();
 
-    let mut display: Display = Lcd::new(i2c, delay_lcd)
-        .address(LCD_ADDR)
-        .cursor_on(false)
-        .rows(2)
-        .init().unwrap();
+    let mut display: Display = Display::new(
+        Lcd::new(i2c, delay_lcd)
+            .address(LCD_ADDR)
+            .cursor_on(false)
+            .rows(2)
+            .init().unwrap()
+    );
 
     // DHT11 sensor
     let mut dht = Dht::new(
@@ -84,11 +98,13 @@ fn main() -> ! {
         }
     }
 
+    display.write_message("Test!!!");
+
     // Main loop
     loop {
         handle_action(&mut serial, &mut led, &mut display, &mut dht);
+        //display.check_state();
     }
-    //ufmt::uwrite!(&mut serial, "Hello, world!\r\n").void_unwrap();
 }
 
 fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht: &mut Dht) {
@@ -103,15 +119,12 @@ fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht:
         },
         Ok(Action::DisplayMessage) => {
             let amt_bytes = serial.read().clamp(0, 32); 
-            for _ in 0..amt_bytes {
-                led.toggle();
-            }
             let mut message: [u8; 32] = [0; 32];
             let message = &mut message[..amt_bytes as usize];
             for i in 0..amt_bytes {
                 message[i as usize] = serial.read();
             }
-            write_message(core::str::from_utf8(message).unwrap(), display);
+            display.write_message(core::str::from_utf8(message).unwrap());
         },
         Ok(Action::ReadDHT) => {
             serial.write(&dht.measure());
@@ -122,17 +135,5 @@ fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht:
 
     if action.is_ok() {
         serial.write_action(Action::Recv);
-    }
-}
-
-pub fn write_message(message: &str, display: &mut Display) {
-    display.clear().unwrap();
-    if message.len() > 16 {
-        display.write_str(&message[..16]).unwrap();
-        display.set_cursor(1, 0).unwrap();
-        display.write_str(&message[16..]).unwrap();
-    }
-    else {
-        display.write_str(message).unwrap();
     }
 }
