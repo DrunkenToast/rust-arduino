@@ -198,12 +198,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "panic-halt"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de96540e0ebde571dc55c73d60ef407c653844e6f9a1e2fdbd40c07b9252d812"
-
-[[package]]
 name = "paste"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -243,7 +237,6 @@ dependencies = [
  "embedded-hal",
  "embedded-time",
  "nb 1.0.0",
- "panic-halt",
  "ufmt",
  "ufmt-write",
 ]

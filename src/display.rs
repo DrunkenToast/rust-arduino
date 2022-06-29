@@ -5,7 +5,7 @@ use crate::{lcd_i2c::{Lcd, Backlight}, millis::millis};
 type LcdType = Lcd<I2c, Delay>;
 
 pub struct Display {
-    lcd: LcdType,
+    pub lcd: LcdType,
     last_received: u32,
 }
 
@@ -17,7 +17,7 @@ impl Display {
     pub fn write_message(&mut self, message: &str) {
         self.lcd.clear().unwrap();
         self.last_received = millis();
-        self.lcd.set_backlight(Backlight::On);
+        self.lcd.set_backlight(Backlight::On).unwrap();
 
         if message.len() > 16 {
             self.lcd.write_str(&message[..16]).unwrap();
@@ -32,7 +32,7 @@ impl Display {
     pub fn check_state(&mut self) {
         if self.lcd.get_backlight() == Backlight::On
         && self.last_received + 5000 < millis() {
-            self.lcd.set_backlight(Backlight::Off);
+            self.lcd.set_backlight(Backlight::Off).unwrap();
         }
     }
 }

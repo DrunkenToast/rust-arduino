@@ -9,21 +9,18 @@ mod display;
 mod millis;
 mod panic;
 
-use arduino_hal::{port::{mode::{Output}, Pin}, hal::{port::{PB5}, Atmega}, I2c, Delay, clock::Clock};
-use arduino_hal::prelude::*;
+use arduino_hal::{port::{mode::{Output}, Pin}, hal::{port::{PB5}}};
 
 use dht::Dht;
 use dht11::Dht11;
 use display::Display;
-use embedded_time::{Timer, duration::Extensions};
-use millis::{millis_init, millis};
-use panic_halt as _;
-use embedded_hal::{prelude::*, digital::v2::{OutputPin, PinState}, timer};
-use lcd_i2c::{Lcd, Backlight};
+use millis::{millis_init};
+use embedded_hal::{digital::v2::{OutputPin, PinState}};
+use lcd_i2c::{Lcd};
 use serial::Serial;
 
 #[repr(u8)]
-enum Action {
+pub enum Action {
     Hello = 0,
     SwitchLed = 1,
     DisplayMessage = 2,
@@ -57,12 +54,11 @@ fn main() -> ! {
     let pins = arduino_hal::pins!(dp);
     
     let mut led: Led = pins.d13.into_output();
-    let mut serial: Serial = Serial::new(arduino_hal::default_serial!(dp, pins, 9600));
+    let mut serial: Serial = Serial::new(arduino_hal::default_serial!(dp, pins, 57600));
 
-    millis_init(dp.TC0);
     // Enable interrupts globally
     unsafe { avr_device::interrupt::enable() };
-
+    millis_init(dp.TC0);
 
     let i2c = arduino_hal::I2c::new(
         dp.TWI,
@@ -87,23 +83,28 @@ fn main() -> ! {
         arduino_hal::Delay::new()
     );
 
-    // Say wait for connection with master
+    // Wait for connection with master
+    display.write_message("Connecting with master...");
     loop {
         serial.write_action(Action::Hello);
         
         let b = serial.read();
         if let Ok(Action::Hello) = Action::try_from(b) {
             serial.write_u8(Action::Recv as u8);
+            display.write_message("Connected!");
             break;
         }
     }
 
-    display.write_message("Test!!!");
+    //loop {
+        //let b = serial.read();
+        //serial.write_u8(b);
+    //}
 
     // Main loop
     loop {
         handle_action(&mut serial, &mut led, &mut display, &mut dht);
-        //display.check_state();
+        display.check_state();
     }
 }
 
@@ -118,12 +119,20 @@ fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht:
             else {led.set_state(PinState::Low).unwrap();}
         },
         Ok(Action::DisplayMessage) => {
-            let amt_bytes = serial.read().clamp(0, 32); 
+            let amt_bytes = serial.read(); 
+            //for _ in 0..amt_bytes {
+                //led.toggle();
+                //arduino_hal::delay_ms(500);
+            //}
+            arduino_hal::delay_ms(1000);
+            led.set_low();
+
             let mut message: [u8; 32] = [0; 32];
             let message = &mut message[..amt_bytes as usize];
             for i in 0..amt_bytes {
                 message[i as usize] = serial.read();
             }
+            led.set_high();
             display.write_message(core::str::from_utf8(message).unwrap());
         },
         Ok(Action::ReadDHT) => {
