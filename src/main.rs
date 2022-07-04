@@ -109,7 +109,12 @@ fn main() -> ! {
 }
 
 fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht: &mut Dht) {
-    let action = Action::try_from(serial.read());
+    let action = if let Ok(b) = serial.read_no_block() {
+        Action::try_from(b)
+    }
+    else {
+        return;
+    };
 
     match action {
         Ok(Action::Hello) => {},
@@ -120,19 +125,14 @@ fn handle_action(serial: &mut Serial, led: &mut Led, display: &mut Display, dht:
         },
         Ok(Action::DisplayMessage) => {
             let amt_bytes = serial.read(); 
-            //for _ in 0..amt_bytes {
-                //led.toggle();
-                //arduino_hal::delay_ms(500);
-            //}
-            arduino_hal::delay_ms(1000);
-            led.set_low();
 
             let mut message: [u8; 32] = [0; 32];
             let message = &mut message[..amt_bytes as usize];
             for i in 0..amt_bytes {
-                message[i as usize] = serial.read();
+                let b = serial.read();
+                //serial.write_u8(b);
+                message[i as usize] = b;
             }
-            led.set_high();
             display.write_message(core::str::from_utf8(message).unwrap());
         },
         Ok(Action::ReadDHT) => {

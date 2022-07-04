@@ -10,13 +10,7 @@
  *
  *     https://blog.rahix.de/005-avr-hal-millis/
  */
-#![no_std]
-#![no_main]
-
-use arduino_hal::prelude::*;
 use core::cell;
-
-use embedded_hal::serial::Read;
 
 // Possible Values:
 //
