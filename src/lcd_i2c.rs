@@ -213,8 +213,8 @@ where
 
     /// Write string to display.
     pub fn write_str(&mut self, data: &str) -> Result<(), <I as Write>::Error> {
-        for c in data.chars() {
-            self.send(c as u8, Mode::Data)?;
+        for c in data.bytes() {
+            self.send(c, Mode::Data)?;
         }
         Ok(())
     }
