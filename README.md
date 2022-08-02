@@ -16,6 +16,12 @@ Serves DHT measurements and listens to actions for LED and message display.
 ![Sketch](./sketch.png)
 
 ### Build & deploy on Arduino
+If you don't have them already, install `ravedude`:
 
+```bash
+cargo install cargo-generate
+cargo install ravedude
+```
+
+Then to run:
 `cargo run`
-
