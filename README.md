@@ -13,6 +13,8 @@ Serves DHT measurements and listens to actions for LED and message display.
 - LED: pin 13
 - DHT11: pin 2
 
+![Sketch](./sketch.png)
+
 ### Build & deploy on Arduino
 
 `cargo run`
